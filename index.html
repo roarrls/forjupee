@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>For Sallsour</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Georgia, serif;
+}
+
+body{
+height:100vh;
+background:black;
+overflow:hidden;
+display:flex;
+justify-content:center;
+align-items:center;
+color:#f5eaea;
+text-align:center;
+}
+
+canvas{
+position:fixed;
+top:0;
+left:0;
+z-index:0;
+pointer-events:none;
+}
+
+.container{
+position:relative;
+z-index:2;
+max-width:750px;
+padding:40px;
+}
+
+h1{
+letter-spacing:3px;
+opacity:0.85;
+margin-bottom:30px;
+}
+
+button{
+padding:12px 35px;
+background:transparent;
+border:1px solid rgba(255,255,255,0.2);
+color:white;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+background:rgba(255,255,255,0.1);
+}
+
+.hidden{display:none;}
+
+.candle{
+margin-top:60px;
+position:relative;
+width:10px;
+height:70px;
+background:white;
+margin-left:auto;
+margin-right:auto;
+border-radius:4px;
+}
+
+.flame{
+position:absolute;
+top:-25px;
+left:50%;
+transform:translateX(-50%);
+width:18px;
+height:30px;
+background:radial-gradient(circle at 50% 30%, #fff7c2 0%, orange 40%, red 80%);
+border-radius:50%;
+box-shadow:0 0 40px orange;
+animation:flicker 0.12s infinite alternate;
+}
+
+@keyframes flicker{
+from{transform:translateX(-50%) scaleY(1);}
+to{transform:translateX(-50%) scaleY(1.2);}
+}
+
+.message{
+margin-top:40px;
+line-height:2;
+font-size:18px;
+opacity:0;
+white-space:pre-line;
+text-shadow:0 0 15px rgba(255,200,200,0.3);
+transition:2s;
+}
+
+.show{opacity:1;}
+
+.final{
+margin-top:60px;
+font-size:22px;
+opacity:0;
+transition:3s;
+letter-spacing:2px;
+}
+
+.date{
+margin-top:15px;
+font-size:14px;
+opacity:0.6;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="container">
+<h1>Hello, Sallsour.</h1>
+<button onclick="start()">open your gift</button>
+
+<div id="candleArea" class="hidden">
+<div class="candle">
+<div class="flame" id="flame"></div>
+</div>
+<p style="opacity:0.6;margin-top:25px;">blow the candle...</p>
+</div>
+
+<div class="message" id="msg"></div>
+
+<div class="final" id="final">
+always proud of you, syg.
+<div class="date">2 March</div>
+</div>
+
+</div>
+
+<audio id="music" src="music.mp3" loop></audio>
+
+<script>
+/* STARFIELD BACKGROUND */
+const canvas=document.getElementById("stars");
+const ctx=canvas.getContext("2d");
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let stars=[];
+for(let i=0;i<200;i++){
+stars.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height,
+r:Math.random()*1.5
+});
+}
+
+function drawStars(){
+ctx.fillStyle="black";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="white";
+for(let s of stars){
+ctx.beginPath();
+ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+ctx.fill();
+s.y+=0.15;
+if(s.y>canvas.height){
+s.y=0;
+s.x=Math.random()*canvas.width;
+}
+}
+requestAnimationFrame(drawStars);
+}
+drawStars();
+
+/* FLOW */
+let music=document.getElementById("music");
+
+function start(){
+document.querySelector("button").style.display="none";
+document.getElementById("candleArea").classList.remove("hidden");
+startMic();
+}
+
+function startMic(){
+navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+const audioContext=new AudioContext();
+const mic=audioContext.createMediaStreamSource(stream);
+const analyser=audioContext.createAnalyser();
+mic.connect(analyser);
+const data=new Uint8Array(analyser.frequencyBinCount);
+
+function detect(){
+analyser.getByteFrequencyData(data);
+let volume=data.reduce((a,b)=>a+b)/data.length;
+if(volume>45){
+stream.getTracks().forEach(track=>track.stop());
+blow();
+}else{
+requestAnimationFrame(detect);
+}
+}
+detect();
+});
+}
+
+function blow(){
+document.getElementById("flame").style.display="none";
+document.getElementById("candleArea").style.display="none";
+
+music.volume=0;
+music.play();
+
+let fade=setInterval(()=>{
+if(music.volume<0.5){
+music.volume+=0.02;
+}else{
+clearInterval(fade);
+}
+},200);
+
+typeParagraphs();
+}
+
+function typeParagraphs(){
+let paragraphs=[
+"Happy birthday to the girl who never judges me, the person that worked with me to become who I am today and who stayed even when times were hard.",
+"To the sweetest, most kind hearted soul on the planet.",
+"You truly deserve the world and I will forever thank the universe for blessing me with you as my best friend.",
+"I love you more than words could ever describe.",
+"Everybody needs a salsa in their life!",
+"may life be gentle with u.\nmay ur dreams slowly find their way & may u never forget how loved and capable u're."
+];
+
+let msg=document.getElementById("msg");
+msg.classList.add("show");
+msg.innerHTML="";
+let pIndex=0;
+
+function typeNext(){
+if(pIndex>=paragraphs.length){
+setTimeout(()=>{
+document.getElementById("final").style.opacity=1;
+},2000);
+return;
+}
+
+let text=paragraphs[pIndex];
+let i=0;
+let p=document.createElement("p");
+msg.appendChild(p);
+
+function typing(){
+if(i<text.length){
+p.innerHTML+=text.charAt(i);
+i++;
+setTimeout(typing,60);
+}else{
+pIndex++;
+setTimeout(typeNext,1200);
+}
+}
+typing();
+}
+typeNext();
+}
+</script>
+
+</body>
+</html>
